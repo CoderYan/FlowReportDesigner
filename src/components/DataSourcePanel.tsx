@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DataSource, DataSourceTable } from '../types';
-import { Database, ChevronRight, ChevronDown, Settings, Table as TableIcon, List } from 'lucide-react';
+import { Database, ChevronRight, ChevronDown, Settings, Table as TableIcon, List, ArrowRight } from 'lucide-react';
 import { cn } from './Icons';
 
 interface DataSourcePanelProps {
@@ -39,9 +39,10 @@ export const DataSourcePanel: React.FC<DataSourcePanelProps> = ({ dataSource, on
           />
           <button
             onClick={() => onFetch(url)}
-            className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium"
+            className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center"
+            title={t.fetchData}
           >
-            {t.fetchData}
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
