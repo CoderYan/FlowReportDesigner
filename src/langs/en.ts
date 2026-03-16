@@ -81,5 +81,8 @@ export const en = {
   systemFields: 'System Fields',
   tables: 'Tables',
   columns: 'Columns',
+  selectColumns: 'Select Columns',
+  cancel: 'Cancel',
+  confirm: 'Confirm',
   selectToEdit: 'Select a component to edit',
 };

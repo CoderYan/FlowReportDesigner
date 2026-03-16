@@ -81,5 +81,8 @@ export const zh = {
   systemFields: '系统字段',
   tables: '数据表',
   columns: '列',
+  selectColumns: '选择列',
+  cancel: '取消',
+  confirm: '确认',
   selectToEdit: '选择一个组件进行编辑',
 };

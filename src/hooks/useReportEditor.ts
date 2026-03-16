@@ -388,7 +388,7 @@ export function useReportEditor() {
   }, [findNode]);
 
   const exportXml = useCallback(() => {
-    const xml = jsonToXml(report);
+    const xml = jsonToXml(report, dataSource);
     const blob = new Blob([xml], { type: 'text/xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -396,12 +396,15 @@ export function useReportEditor() {
     a.download = 'report_layout.xml';
     a.click();
     URL.revokeObjectURL(url);
-  }, [report]);
+  }, [report, dataSource]);
 
   const importXml = useCallback((content: string) => {
     try {
-      const newNode = xmlToJson(content);
+      const { report: newNode, dataSource: newDataSource } = xmlToJson(content);
       setReport(newNode);
+      if (newDataSource) {
+        setDataSource(newDataSource);
+      }
       setSelectedIds([]);
     } catch (err) {
       console.error("Failed to parse XML", err);
