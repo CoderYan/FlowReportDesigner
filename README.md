@@ -18,3 +18,6 @@ View your app in AI Studio: https://ai.studio/apps/675b6100-bb4a-485e-9840-de07d
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## DataSource
+Demo Source Schame for test, you can use `/demo/data_schame.xml` for test，with the "Fetch Data" button,you will get two table
