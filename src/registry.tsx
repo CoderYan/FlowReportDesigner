@@ -16,7 +16,8 @@ import {
   PageNode,
   HeaderNode,
   BodyNode,
-  FooterNode
+  FooterNode,
+  DataSource
 } from './types';
 import { cn } from './components/Icons';
 
@@ -28,11 +29,13 @@ export interface ComponentDefinition {
   createNode: (id: string, parent?: ReportNode) => ReportNode;
   render: (props: { 
     node: ReportNode; 
+    report: ReportNode;
     combinedStyles: React.CSSProperties; 
     selectedIds: string[];
     onSelect: (id: string, multi?: boolean) => void;
     onAdd: (parentId: string, type: ComponentType, initialData?: any) => void;
     onDropNode: (parentId: string, type: ComponentType, initialData?: any) => void;
+    onDropTable: (table: any, parentId: string, isExistingTable: boolean) => void;
     onUpdateNode: (id: string, updates: any) => void;
     isPreview: boolean;
     isOver: boolean;
@@ -46,6 +49,7 @@ export interface ComponentDefinition {
     onUpdate: (updates: Partial<ReportNode>) => void;
     handleStyleChange: (key: keyof ComponentStyles, value: any) => void;
     getCommonValue: (getValue: (n: ReportNode) => any) => any;
+    dataSource: DataSource;
     t: any;
     Components: {
       PropertyInput: React.FC<any>;
@@ -86,7 +90,7 @@ registerComponent({
     styles: { fontSize: '16px', color: '#000000', textAlign: 'left', padding: '4px' },
     content: 'New Text',
   } as TextNode),
-  render: ({ node, combinedStyles, onUpdateNode, isOver, handleDragOver, handleDragLeave, handleDrop }) => {
+  render: ({ node, report, combinedStyles, onUpdateNode, isOver, handleDragOver, handleDragLeave, handleDrop, onDropTable }) => {
     const textStyles: React.CSSProperties = {
       ...combinedStyles,
       display: 'flex',
@@ -257,7 +261,7 @@ registerComponent({
     styles: { width: '100%', height: 'auto', borderRadius: '4px' },
     src: 'https://picsum.photos/seed/report/400/300',
   } as ImageNode),
-  render: ({ node, combinedStyles, onUpdateNode, isOver, handleDragOver, handleDragLeave, handleDrop }) => (
+  render: ({ node, report, combinedStyles, onUpdateNode, isOver, handleDragOver, handleDragLeave, handleDrop, onDropTable }) => (
     <img 
       src={(node as ImageNode).src} 
       alt={node.name} 
@@ -283,7 +287,7 @@ registerComponent({
 
 // Register Layout Components (Horizontal/Vertical)
 const createLayoutRender = (type: 'horizontal' | 'vertical') => {
-  return ({ node, combinedStyles, isOver, handleDragOver, handleDragLeave, handleDrop, CanvasNode, selectedIds, onSelect, onAdd, onDropNode, onUpdateNode, isPreview }: any) => (
+  return ({ node, report, combinedStyles, isOver, handleDragOver, handleDragLeave, handleDrop, CanvasNode, selectedIds, onSelect, onAdd, onDropNode, onDropTable, onUpdateNode, isPreview }: any) => (
     <div 
       style={{
         display: 'flex',
@@ -307,10 +311,12 @@ const createLayoutRender = (type: 'horizontal' | 'vertical') => {
         <CanvasNode 
           key={child.id} 
           node={child} 
+          report={report}
           selectedIds={selectedIds} 
           onSelect={onSelect} 
           onAdd={onAdd}
           onDropNode={onDropNode}
+          onDropTable={onDropTable}
           onUpdateNode={onUpdateNode}
           isPreview={isPreview}
         />
@@ -444,7 +450,7 @@ registerComponent({
       })
     } as TableNode;
   },
-  render: ({ node, combinedStyles, isOver, handleDragOver, handleDragLeave, handleDrop, CanvasNode, selectedIds, onSelect, onAdd, onDropNode, onUpdateNode, isPreview }) => (
+  render: ({ node, report, combinedStyles, isOver, handleDragOver, handleDragLeave, handleDrop, CanvasNode, selectedIds, onSelect, onAdd, onDropNode, onDropTable, onUpdateNode, isPreview }) => (
     <div 
       style={{
         display: 'grid',
@@ -468,10 +474,12 @@ registerComponent({
         <CanvasNode 
           key={child.id} 
           node={child} 
+          report={report}
           selectedIds={selectedIds} 
           onSelect={onSelect} 
           onAdd={onAdd}
           onDropNode={onDropNode}
+          onDropTable={onDropTable}
           onUpdateNode={onUpdateNode}
           isPreview={isPreview}
         />
@@ -483,10 +491,16 @@ registerComponent({
       )}
     </div>
   ),
-  renderProperties: ({ getCommonValue, onUpdate, handleStyleChange, Components, t }) => (
+  renderProperties: ({ getCommonValue, onUpdate, handleStyleChange, dataSource, Components, t }) => (
     <section>
       <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 block">{t.table}</label>
       <div className="flex flex-col gap-3">
+        <Components.PropertySelect 
+          label={t.dataSource} 
+          value={getCommonValue(n => (n as any).dataSource || '')} 
+          options={['', ...dataSource.tables.map(table => table.id)]} 
+          onChange={(v: string) => onUpdate({ dataSource: v })} 
+        />
         <div className="grid grid-cols-2 gap-3">
           <Components.PropertyInput 
             label={t.rows} 
@@ -534,7 +548,7 @@ registerComponent({
     isMerged: false,
     children: []
   } as TableCellNode),
-  render: ({ node, combinedStyles, isOver, handleDragOver, handleDragLeave, handleDrop, CanvasNode, selectedIds, onSelect, onAdd, onDropNode, onUpdateNode, isPreview }) => (
+  render: ({ node, report, combinedStyles, isOver, handleDragOver, handleDragLeave, handleDrop, CanvasNode, selectedIds, onSelect, onAdd, onDropNode, onDropTable, onUpdateNode, isPreview }) => (
     <div 
       style={{
         display: (node as TableCellNode).isMerged ? 'none' : 'flex',
@@ -559,10 +573,12 @@ registerComponent({
         <CanvasNode 
           key={child.id} 
           node={child} 
+          report={report}
           selectedIds={selectedIds} 
           onSelect={onSelect} 
           onAdd={onAdd}
           onDropNode={onDropNode}
+          onDropTable={onDropTable}
           onUpdateNode={onUpdateNode}
           isPreview={isPreview}
         />
@@ -625,7 +641,7 @@ registerComponent({
       { id: `f-${id}`, type: 'footer', name: 'Footer', styles: { height: '40px', borderTop: '1px solid #e2e8f0', padding: '10px', backgroundColor: '#f8fafc' }, children: [] } as FooterNode
     ]
   } as PageNode),
-  render: ({ node, combinedStyles, CanvasNode, selectedIds, onSelect, onAdd, onDropNode, onUpdateNode, isPreview }) => (
+  render: ({ node, report, combinedStyles, CanvasNode, selectedIds, onSelect, onAdd, onDropNode, onDropTable, onUpdateNode, isPreview }) => (
     <div style={combinedStyles} className="flex flex-col h-full w-full">
       {node.children?.map(child => {
         if (child.type === 'header' && !(node as PageNode).showHeader) return null;
@@ -634,10 +650,12 @@ registerComponent({
           <CanvasNode 
             key={child.id} 
             node={child} 
+            report={report}
             selectedIds={selectedIds} 
             onSelect={onSelect} 
             onAdd={onAdd}
             onDropNode={onDropNode}
+            onDropTable={onDropTable}
             onUpdateNode={onUpdateNode}
             isPreview={isPreview}
           />
@@ -706,7 +724,7 @@ registerComponent({
 
 // Register Header/Footer/Body Components
 const createRegionRender = (type: 'header' | 'footer' | 'body') => {
-  return ({ node, combinedStyles, isOver, handleDragOver, handleDragLeave, handleDrop, CanvasNode, selectedIds, onSelect, onAdd, onDropNode, onUpdateNode, isPreview }: any) => (
+  return ({ node, report, combinedStyles, isOver, handleDragOver, handleDragLeave, handleDrop, CanvasNode, selectedIds, onSelect, onAdd, onDropNode, onDropTable, onUpdateNode, isPreview }: any) => (
     <div 
       style={{
         display: 'flex',
@@ -731,10 +749,12 @@ const createRegionRender = (type: 'header' | 'footer' | 'body') => {
         <CanvasNode 
           key={child.id} 
           node={child} 
+          report={report}
           selectedIds={selectedIds} 
           onSelect={onSelect} 
           onAdd={onAdd}
           onDropNode={onDropNode}
+          onDropTable={onDropTable}
           onUpdateNode={onUpdateNode}
           isPreview={isPreview}
         />

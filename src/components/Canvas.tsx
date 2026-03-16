@@ -8,6 +8,7 @@ interface CanvasProps {
   onSelect: (id: string, multi?: boolean) => void;
   onAdd: (parentId: string, type: ComponentType, initialData?: any) => void;
   onDropNode: (parentId: string, type: ComponentType, initialData?: any) => void;
+  onDropTable: (table: any, parentId: string, isExistingTable: boolean) => void;
   onUpdateNode: (id: string, updates: any) => void;
   isPreview: boolean;
   zoom: number;
@@ -21,6 +22,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   onSelect,
   onAdd,
   onDropNode,
+  onDropTable,
   onUpdateNode,
   isPreview,
   zoom,
@@ -77,10 +79,12 @@ export const Canvas: React.FC<CanvasProps> = ({
             >
               <CanvasNode 
                 node={page} 
+                report={report}
                 selectedIds={isPreview ? [] : selectedIds} 
                 onSelect={onSelect} 
                 onAdd={onAdd}
                 onDropNode={onDropNode}
+                onDropTable={onDropTable}
                 onUpdateNode={onUpdateNode}
                 isPreview={isPreview}
               />
@@ -94,10 +98,12 @@ export const Canvas: React.FC<CanvasProps> = ({
 
 interface CanvasNodeProps {
   node: ReportNode;
+  report: ReportNode;
   selectedIds: string[];
   onSelect: (id: string, multi?: boolean) => void;
   onAdd: (parentId: string, type: ComponentType, initialData?: any) => void;
   onDropNode: (parentId: string, type: ComponentType, initialData?: any) => void;
+  onDropTable: (table: any, parentId: string, isExistingTable: boolean) => void;
   onUpdateNode: (id: string, updates: any) => void;
   isPreview: boolean;
 }
@@ -134,7 +140,7 @@ const getFormattedStyles = (styles: ComponentStyles) => {
 
 import { getComponentDefinition } from '../registry';
 
-const CanvasNode: React.FC<CanvasNodeProps> = ({ node, selectedIds, onSelect, onAdd, onDropNode, onUpdateNode, isPreview }) => {
+const CanvasNode: React.FC<CanvasNodeProps> = ({ node, report, selectedIds, onSelect, onAdd, onDropNode, onDropTable, onUpdateNode, isPreview }) => {
   const isSelected = selectedIds.includes(node.id);
   const isMerged = (node as any).isMerged;
   const def = getComponentDefinition(node.type);
@@ -170,7 +176,7 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, selectedIds, onSelect, on
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    if (isContainer || node.type === 'text' || node.type === 'image') {
+    if (isContainer || node.type === 'text' || node.type === 'image' || node.type === 'table') {
       e.preventDefault();
       e.stopPropagation();
       setIsOver(true);
@@ -181,13 +187,89 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, selectedIds, onSelect, on
     setIsOver(false);
   };
 
+  const getNearestTableDataSource = (root: ReportNode, nodeId: string): string | undefined => {
+    let currentId = nodeId;
+    while (currentId) {
+      const node = findNodeById(root, currentId);
+      if (node?.type === 'table') {
+        return (node as any).dataSource;
+      }
+      currentId = getParentId(root, currentId) || '';
+    }
+    return undefined;
+  };
+
+  const findNodeById = (root: ReportNode, id: string): ReportNode | undefined => {
+    if (root.id === id) return root;
+    if (root.children) {
+      for (const child of root.children) {
+        const found = findNodeById(child, id);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  };
+
+  const getParentId = (root: ReportNode, childId: string): string | undefined => {
+    const findRecursive = (parent: ReportNode): string | undefined => {
+      if (parent.children) {
+        for (const child of parent.children) {
+          if (child.id === childId) return parent.id;
+          const found = findRecursive(child);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
+    return findRecursive(root);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsOver(false);
 
-    const dataSourceField = e.dataTransfer.getData('dataSourceField');
+    const dataSourceTableStr = e.dataTransfer.getData('dataSourceTable');
+    if (dataSourceTableStr) {
+      const table = JSON.parse(dataSourceTableStr);
+      
+      // If dropped on table-cell or something inside it, bind to the parent table
+      let currentId = node.id;
+      let currentNode: ReportNode | undefined = node;
+      
+      while (currentNode) {
+        if (currentNode.type === 'table') {
+          onDropTable(table, currentNode.id, true);
+          return;
+        }
+        if (currentNode.type === 'table-cell') {
+          const parentTableId = getParentId(report, currentNode.id);
+          if (parentTableId) {
+            onDropTable(table, parentTableId, true);
+            return;
+          }
+        }
+        const parentId = getParentId(report, currentId);
+        if (!parentId) break;
+        currentId = parentId;
+        currentNode = findNodeById(report, currentId);
+      }
+
+      onDropTable(table, node.id, node.type === 'table');
+      return;
+    }
+
+    let dataSourceField = e.dataTransfer.getData('dataSourceField');
     if (dataSourceField) {
+      // Simplify if inside a table with dataSource
+      const tableDataSource = getNearestTableDataSource(report, node.id);
+      if (tableDataSource) {
+        const prefix = `{${tableDataSource}.`;
+        if (dataSourceField.startsWith(prefix)) {
+          dataSourceField = '{' + dataSourceField.substring(prefix.length);
+        }
+      }
+
       if (node.type === 'text') {
         onUpdateNode(node.id, { content: dataSourceField });
       } else if (node.type === 'image') {
@@ -216,11 +298,13 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, selectedIds, onSelect, on
 
     return def.render({
       node,
+      report,
       combinedStyles,
       selectedIds,
       onSelect,
       onAdd,
       onDropNode,
+      onDropTable,
       onUpdateNode,
       isPreview,
       isOver,

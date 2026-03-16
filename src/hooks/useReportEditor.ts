@@ -449,6 +449,129 @@ export function useReportEditor() {
     }
   }, []);
 
+  // Helper to add a table from data source
+  const addTableFromDataSource = useCallback((
+    parentId: string, 
+    table: DataSourceTable, 
+    selectedColumns: DataSourceColumn[], 
+    isExistingTable: boolean
+  ) => {
+    setReport(prev => {
+      const newReport = JSON.parse(JSON.stringify(prev));
+      const parent = findNode(newReport, parentId);
+      if (!parent) return prev;
+
+      if (isExistingTable && parent.type === 'table') {
+        const tableNode = parent as TableNode;
+        tableNode.dataSource = table.id;
+        
+        const rows = tableNode.rows || 1;
+        const cols = tableNode.cols || 1;
+        const children = tableNode.children || [];
+
+        // Last row binding
+        const lastRowIndex = rows - 1;
+        selectedColumns.forEach((col, i) => {
+          if (i < cols) {
+            const cell = children.find(c => c.rowIndex === lastRowIndex && c.colIndex === i);
+            if (cell) {
+              const textNode = cell.children?.find(c => c.type === 'text') as TextNode;
+              if (textNode) {
+                textNode.content = `{${col.id}}`;
+              } else {
+                cell.children = [{
+                  id: `text-${cell.id}-${Math.random().toString(36).substr(2, 5)}`,
+                  type: 'text',
+                  name: 'Text',
+                  content: `{${col.id}}`,
+                  styles: { width: '100%', height: '100%', textAlign: 'center' }
+                } as TextNode];
+              }
+            }
+          }
+        });
+
+        // Second to last row (headers)
+        if (rows >= 2) {
+          const secondLastRowIndex = rows - 2;
+          selectedColumns.forEach((col, i) => {
+            if (i < cols) {
+              const cell = children.find(c => c.rowIndex === secondLastRowIndex && c.colIndex === i);
+              if (cell) {
+                const textNode = cell.children?.find(c => c.type === 'text') as TextNode;
+                const headerText = col.name || col.id;
+                if (textNode) {
+                  textNode.content = headerText;
+                } else {
+                  cell.children = [{
+                    id: `text-${cell.id}-${Math.random().toString(36).substr(2, 5)}`,
+                    type: 'text',
+                    name: 'Text',
+                    content: headerText,
+                    styles: { width: '100%', height: '100%', textAlign: 'center', fontWeight: 'bold' }
+                  } as TextNode];
+                }
+              }
+            }
+          });
+        }
+      } else {
+        // Create new table
+        const id = Math.random().toString(36).substr(2, 9);
+        const cols = selectedColumns.length;
+        const rows = 2;
+        
+        const newTable: TableNode = {
+          id: `table-${id}`,
+          type: 'table',
+          name: `Table ${table.name}`,
+          dataSource: table.id,
+          rows,
+          cols,
+          styles: { width: '100%', margin: '10px 0' },
+          children: []
+        };
+
+        const cells: TableCellNode[] = [];
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const col = selectedColumns[c];
+            const isHeader = r === 0;
+            const content = isHeader ? (col.name || col.id) : `{${col.id}}`;
+            
+            cells.push({
+              id: `cell-${newTable.id}-${r}-${c}`,
+              type: 'table-cell',
+              name: `Cell ${r + 1}-${c + 1}`,
+              rowIndex: r,
+              colIndex: c,
+              isMerged: false,
+              styles: { 
+                padding: '5px', 
+                border: '1px solid #e2e8f0',
+                backgroundColor: isHeader ? '#f8fafc' : '#ffffff',
+                fontWeight: isHeader ? 'bold' : 'normal'
+              },
+              children: [{
+                id: `text-${newTable.id}-${r}-${c}-${Math.random().toString(36).substr(2, 5)}`,
+                type: 'text',
+                name: 'Text',
+                content,
+                styles: { width: '100%', height: '100%', textAlign: 'center' }
+              } as TextNode]
+            });
+          }
+        }
+        newTable.children = cells;
+        
+        parent.children = [...(parent.children || []), newTable];
+        setSelectedIds([newTable.id]);
+      }
+      
+      return newReport;
+    });
+  }, [findNode]);
+
   return {
     report,
     dataSource,
@@ -474,6 +597,7 @@ export function useReportEditor() {
     deleteNode,
     deleteNodes,
     addNode,
+    addTableFromDataSource,
     moveNode,
     exportXml,
     importXml,

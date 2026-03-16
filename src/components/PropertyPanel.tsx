@@ -1,6 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { ReportNode, ComponentType, ComponentStyles, PageSize } from '../types';
+import { ReportNode, ComponentType, ComponentStyles, PageSize, DataSource } from '../types';
 import { cn } from './Icons';
 import { getComponentDefinition } from '../registry';
 
@@ -8,6 +8,7 @@ interface PropertyPanelProps {
   nodes: ReportNode[];
   onUpdate: (updates: Partial<ReportNode>) => void;
   parentType?: ComponentType;
+  dataSource: DataSource;
   t: any;
 }
 
@@ -15,6 +16,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   nodes, 
   onUpdate, 
   parentType, 
+  dataSource,
   t 
 }) => {
   if (nodes.length === 0) return null;
@@ -40,6 +42,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
         onUpdate,
         handleStyleChange,
         getCommonValue,
+        dataSource,
         t,
         Components: { PropertyInput, PropertySelect, PropertyTextArea }
       })}

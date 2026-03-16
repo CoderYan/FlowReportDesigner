@@ -14,6 +14,8 @@ import { PropertyPanel } from './components/PropertyPanel';
 import { cn } from './components/Icons';
 import { ComponentType, ReportNode } from './types';
 
+import { TableDropDialog } from './components/TableDropDialog';
+
 export default function App() {
   const {
     report,
@@ -40,11 +42,14 @@ export default function App() {
     deleteNode,
     deleteNodes,
     addNode,
+    addTableFromDataSource,
     moveNode,
     exportXml,
     importXml,
     findNode
   } = useReportEditor();
+
+  const [pendingTableDrop, setPendingTableDrop] = React.useState<{ table: any, parentId: string, isExistingTable: boolean } | null>(null);
 
   const t = TRANSLATIONS[lang];
 
@@ -111,6 +116,22 @@ export default function App() {
 
   return (
     <div className={cn("flex flex-col h-screen overflow-hidden transition-colors", theme === 'dark' ? "bg-slate-900 text-slate-100" : "bg-slate-100 text-slate-900")}>
+      {pendingTableDrop && (
+        <TableDropDialog 
+          table={pendingTableDrop.table}
+          t={t}
+          onCancel={() => setPendingTableDrop(null)}
+          onConfirm={(selectedColumns) => {
+            addTableFromDataSource(
+              pendingTableDrop.parentId,
+              pendingTableDrop.table,
+              selectedColumns,
+              pendingTableDrop.isExistingTable
+            );
+            setPendingTableDrop(null);
+          }}
+        />
+      )}
       <Header 
         t={t}
         lang={lang}
@@ -157,6 +178,9 @@ export default function App() {
           onSelect={handleSelect}
           onAdd={addNode}
           onDropNode={addNode}
+          onDropTable={(table, parentId, isExistingTable) => {
+            setPendingTableDrop({ table, parentId, isExistingTable });
+          }}
           onUpdateNode={updateNode}
           isPreview={isPreview}
           zoom={zoom}
@@ -175,6 +199,7 @@ export default function App() {
                   nodes={selectedNodes} 
                   onUpdate={(updates) => updateNodes(selectedIds, updates)} 
                   parentType={selectedNodes.length === 1 ? getParentType(report, selectedNodes[0].id) : undefined}
+                  dataSource={dataSource}
                   t={t}
                 />
               ) : (

@@ -68,7 +68,11 @@ export const DataSourcePanel: React.FC<DataSourcePanelProps> = ({ dataSource, on
                 <div key={table.id} className="rounded-lg overflow-hidden">
                   <button 
                     onClick={() => toggleTable(table.id)}
-                    className="w-full flex items-center gap-2 p-2 hover:bg-slate-50 transition-colors text-left"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('dataSourceTable', JSON.stringify(table));
+                    }}
+                    className="w-full flex items-center gap-2 p-2 hover:bg-slate-50 transition-colors text-left cursor-grab active:cursor-grabbing"
                   >
                     {expandedTables.includes(table.id) ? <ChevronDown className="w-3 h-3 text-slate-400" /> : <ChevronRight className="w-3 h-3 text-slate-400" />}
                     <TableIcon className="w-3.5 h-3.5 text-emerald-500" />

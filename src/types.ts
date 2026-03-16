@@ -80,6 +80,7 @@ export interface TableNode extends BaseNode {
   type: 'table';
   rows: number;
   cols: number;
+  dataSource?: string;
   children?: TableCellNode[];
 }
 
