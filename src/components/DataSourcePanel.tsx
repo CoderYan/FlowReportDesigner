@@ -86,7 +86,7 @@ export const DataSourcePanel: React.FC<DataSourcePanelProps> = ({ dataSource, on
                           key={col.id} 
                           draggable
                           onDragStart={(e) => {
-                            e.dataTransfer.setData('dataSourceField', `{${table.id}.${col.id}}`);
+                            e.dataTransfer.setData('dataSourceField', `{${table.name || table.id}.${col.name || col.id}}`);
                             e.dataTransfer.setData('dataSourceLabel', col.name);
                           }}
                           className="flex items-center gap-2 p-1.5 text-[11px] text-slate-500 hover:text-indigo-600 transition-colors cursor-grab active:cursor-grabbing group"

@@ -498,7 +498,7 @@ registerComponent({
         <Components.PropertySelect 
           label={t.dataSource} 
           value={getCommonValue(n => (n as any).dataSource || '')} 
-          options={['', ...dataSource.tables.map(table => table.id)]} 
+          options={['', ...dataSource.tables.map(table => table.name || table.id)]} 
           onChange={(v: string) => onUpdate({ dataSource: v })} 
         />
         <div className="grid grid-cols-2 gap-3">

@@ -466,7 +466,7 @@ export function useReportEditor() {
 
       if (isExistingTable && parent.type === 'table') {
         const tableNode = parent as TableNode;
-        tableNode.dataSource = table.id;
+        tableNode.dataSource = table.name || table.id;
         
         const rows = tableNode.rows || 1;
         const cols = tableNode.cols || 1;
@@ -479,14 +479,15 @@ export function useReportEditor() {
             const cell = children.find(c => c.rowIndex === lastRowIndex && c.colIndex === i);
             if (cell) {
               const textNode = cell.children?.find(c => c.type === 'text') as TextNode;
+              const binding = `{${col.name || col.id}}`;
               if (textNode) {
-                textNode.content = `{${col.id}}`;
+                textNode.content = binding;
               } else {
                 cell.children = [{
                   id: `text-${cell.id}-${Math.random().toString(36).substr(2, 5)}`,
                   type: 'text',
                   name: 'Text',
-                  content: `{${col.id}}`,
+                  content: binding,
                   styles: { width: '100%', height: '100%', textAlign: 'center' }
                 } as TextNode];
               }
@@ -528,7 +529,7 @@ export function useReportEditor() {
           id: `table-${id}`,
           type: 'table',
           name: `Table ${table.name}`,
-          dataSource: table.id,
+          dataSource: table.name || table.id,
           rows,
           cols,
           styles: { width: '100%', margin: '10px 0' },
@@ -540,7 +541,7 @@ export function useReportEditor() {
           for (let c = 0; c < cols; c++) {
             const col = selectedColumns[c];
             const isHeader = r === 0;
-            const content = isHeader ? (col.name || col.id) : `{${col.id}}`;
+            const content = isHeader ? (col.name || col.id) : `{${col.name || col.id}}`;
             
             cells.push({
               id: `cell-${newTable.id}-${r}-${c}`,
